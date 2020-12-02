@@ -74,7 +74,7 @@ VERSION_XML2=2.9.10
 VERSION_GSF=1.14.47
 VERSION_EXIF=0.6.22
 VERSION_LCMS2=2.11
-VERSION_JPEG=2.0.6
+VERSION_JPEG=2.0.90
 VERSION_PNG16=1.6.37
 VERSION_SPNG=0.6.1
 VERSION_WEBP=1.1.0
@@ -90,7 +90,7 @@ VERSION_PIXMAN=0.40.0
 VERSION_CAIRO=1.16.0
 VERSION_FRIBIDI=1.0.10
 VERSION_PANGO=1.48.0
-VERSION_SVG=2.50.1
+VERSION_SVG=2.50.2
 VERSION_GIF=5.1.4
 VERSION_AOM=2.0.0
 VERSION_HEIF=1.9.1
@@ -225,12 +225,19 @@ cd ${DEPS}/heif
 sed -i'.bak' -e '/^Requires:/a\'$'\n''Requires.private: aom' libheif.pc # https://github.com/strukturag/libheif/pull/354
 make install-strip
 
+mkdir ${DEPS}/png16
+$CURL https://downloads.sourceforge.net/project/libpng/libpng16/${VERSION_PNG16}/libpng-${VERSION_PNG16}.tar.xz | tar xJC ${DEPS}/png16 --strip-components=1
+cd ${DEPS}/png16
+./configure --host=${CHOST} --prefix=${TARGET} --enable-static --disable-shared --disable-dependency-tracking
+make install-strip
+
 mkdir ${DEPS}/mozjpeg
 curl -Ls https://github.com/mozilla/mozjpeg/archive/v${VERSION_MOZJPEG}.tar.gz | tar xzC ${DEPS}/mozjpeg --strip-components=1
 cd ${DEPS}/mozjpeg
-autoreconf -fiv
-./configure --host=${CHOST} --prefix=${TARGET} --enable-shared --disable-static --disable-dependency-tracking --with-jpeg8
-make install-strip
+#autoreconf -fiv
+LDFLAGS=${LDFLAGS/\$/} cmake -G"Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=${ROOT}/Toolchain.cmake -DCMAKE_INSTALL_PREFIX=${TARGET} -DCMAKE_INSTALL_LIBDIR=${TARGET}/lib \
+  -DENABLE_STATIC=TRUE -DENABLE_SHARED=FALSE -DWITH_JPEG8=1
+make install/strip
 
 mkdir ${DEPS}/jpeg
 $CURL https://github.com/libjpeg-turbo/libjpeg-turbo/archive/${VERSION_JPEG}.tar.gz | tar xzC ${DEPS}/jpeg --strip-components=1
@@ -238,12 +245,6 @@ cd ${DEPS}/jpeg
 LDFLAGS=${LDFLAGS/\$/} cmake -G"Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=${ROOT}/Toolchain.cmake -DCMAKE_INSTALL_PREFIX=${TARGET} -DCMAKE_INSTALL_LIBDIR=${TARGET}/lib \
   -DENABLE_STATIC=TRUE -DENABLE_SHARED=FALSE -DWITH_JPEG8=1 -DWITH_TURBOJPEG=FALSE
 make install/strip
-
-mkdir ${DEPS}/png16
-$CURL https://downloads.sourceforge.net/project/libpng/libpng16/${VERSION_PNG16}/libpng-${VERSION_PNG16}.tar.xz | tar xJC ${DEPS}/png16 --strip-components=1
-cd ${DEPS}/png16
-./configure --host=${CHOST} --prefix=${TARGET} --enable-static --disable-shared --disable-dependency-tracking
-make install-strip
 
 mkdir ${DEPS}/spng
 $CURL https://github.com/randy408/libspng/archive/v${VERSION_SPNG}.tar.gz | tar xzC ${DEPS}/spng --strip-components=1
